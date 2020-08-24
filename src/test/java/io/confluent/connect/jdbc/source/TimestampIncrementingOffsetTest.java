@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 public class TimestampIncrementingOffsetTest {
   private final Timestamp ts = new Timestamp(100L);
   private final long id = 1000L;
+  private final long maxId = 2000L;
   private final TimestampIncrementingOffset unset =
           new TimestampIncrementingOffset(null, null, null);
   private final TimestampIncrementingOffset tsOnly =
@@ -36,6 +37,8 @@ public class TimestampIncrementingOffsetTest {
           new TimestampIncrementingOffset(null, id, null);
   private final TimestampIncrementingOffset tsInc =
           new TimestampIncrementingOffset(ts, id, null);
+  private final TimestampIncrementingOffset incOnlyMax =
+          new TimestampIncrementingOffset(null, id, maxId);
   private Timestamp nanos;
   private TimestampIncrementingOffset nanosOffset;
 
@@ -72,6 +75,11 @@ public class TimestampIncrementingOffsetTest {
     assertEquals(id, incOnly.getIncrementingOffset());
     assertEquals(id, tsInc.getIncrementingOffset());
     assertEquals(-1, nanosOffset.getIncrementingOffset());
+  }
+
+  @Test
+  public void testGetMax() {
+    assertEquals(maxId, incOnlyMax.getMaximumSeenOffset());
   }
 
   @Test
@@ -120,6 +128,9 @@ public class TimestampIncrementingOffsetTest {
 
     x = new TimestampIncrementingOffset(nanos, null, null);
     assertEquals(x, nanosOffset);
+
+    x = new TimestampIncrementingOffset(null, id, maxId);
+    assertEquals(x, incOnlyMax);
   }
 
 }
