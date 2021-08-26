@@ -25,7 +25,7 @@
         <version>5.3.3</version>
     </parent>
 
-    <version>6.0.1-EMNIFY</version>
+    <version>5.3.4-EMNIFY</version>
     <groupId>io.confluent</groupId>
     <artifactId>kafka-connect-jdbc</artifactId>
     <packaging>jar</packaging>
