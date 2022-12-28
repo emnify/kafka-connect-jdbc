@@ -15,6 +15,7 @@
 
 package io.confluent.connect.jdbc.source;
 
+import java.util.TimeZone;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.DataException;
@@ -74,7 +75,11 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
   protected final TimestampGranularity timestampGranularity;
   private final List<ColumnId> timestampColumns;
   private String incrementingColumnName;
-  private final long timestampDelay;
+  private long timestampDelay;
+  private TimestampIncrementingOffset offset;
+  private TimestampIncrementingCriteria criteria;
+  private final Map<String, String> partition;
+  private final String topic;
   private final TimeZone timeZone;
 
   public TimestampIncrementingTableQuerier(DatabaseDialect dialect, QueryMode mode, String name,
@@ -101,7 +106,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     switch (mode) {
       case TABLE:
         String tableName = tableId.tableName();
-        topic = topicPrefix + tableName; // backward compatible
+        topic = topicPrefix + tableName;// backward compatible
         partition = OffsetProtocols.sourcePartitionForProtocolV1(tableId);
         break;
       case QUERY:
