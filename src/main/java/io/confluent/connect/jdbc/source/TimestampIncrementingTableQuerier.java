@@ -58,7 +58,7 @@ import io.confluent.connect.jdbc.util.ExpressionBuilder;
  *   recovery can occur no matter when offsets were committed. If only an incrementing field is
  *   provided, new rows will be detected but not updates. If only timestamp fields are
  *   provided, both new and updated rows will be detected, but stream offsets will not be unique
- *   so failures may cause duplicates.
+ *   so failures may cause duplicates or losses.
  * </p>
  */
 public class TimestampIncrementingTableQuerier extends TableQuerier implements CriteriaValues {
