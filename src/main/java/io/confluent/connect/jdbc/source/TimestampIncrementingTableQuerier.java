@@ -16,6 +16,7 @@
 package io.confluent.connect.jdbc.source;
 
 import java.util.TimeZone;
+
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.DataException;
@@ -122,13 +123,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
 
     this.timeZone = timeZone;
-    this.timestampGranularity = timestampGranularity;
   }
-
-  /**
-   * JDBC TypeName constant for SQL Server's DATETIME columns.
-   */
-  private static String DATETIME = "datetime";
 
   @Override
   protected void createPreparedStatement(Connection db) throws SQLException {
@@ -153,7 +148,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
 
     // Append the criteria using the columns ...
-    criteria = dialect.criteriaFor(incrementingColumn, timestampColumns);
+    criteria = dialect.criteriaFor(incrementingColumn, incrementingRelaxed, timestampColumns);
     criteria.whereClause(builder);
 
     addSuffixIfPresent(builder);
@@ -162,6 +157,17 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     recordQuery(queryString);
     log.trace("{} prepared SQL query: {}", this, queryString);
     stmt = dialect.createPreparedStatement(db, queryString);
+  }
+
+  @Override
+  public void reset(long now) {
+    if (resetOffset) {
+      this.offset = this.committedOffset;
+    }
+    super.reset(now, resetOffset);
+    if (this.incrementingRelaxed) {
+      refreshMaximumSeenOffset();
+    }
   }
 
   @Override
@@ -178,11 +184,30 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
       log.trace("Current ResultSet {} isn't null. Continuing to seek.", resultSet.hashCode());
     }
 
-    // This is called everytime during poll() before extracting records,
-    // to ensure that the previous run succeeded, allowing us to move the committedOffset forward.
-    // This action is a no-op for the first poll()
-    this.committedOffset = this.offset;
-    log.trace("Set the committed offset: {}", committedOffset.getTimestampOffset());
+  private void refreshMaximumSeenOffset() throws ConnectException {
+    this.offset = fetchNewMaximum();
+  }
+
+  private TimestampIncrementingOffset fetchNewMaximum() throws ConnectException {
+    ExpressionBuilder builder = dialect.expressionBuilder();
+    builder.append("SELECT MAX(");
+    builder.append(incrementingColumnName);
+    builder.append(") FROM");
+    builder.append(tableId);
+    String queryString = builder.toString();
+    recordQuery(queryString);
+    try {
+      stmt = dialect.createPreparedStatement(db, queryString);
+      ResultSet rs = stmt.executeQuery();
+      FieldSetter se = this.schemaMapping.fieldSetters().stream()
+              .filter(fs -> fs.field().schema().name() == incrementingColumnName).findFirst().get();
+      Struct st = new Struct(this.schemaMapping.schema());
+      se.setField(st, rs);
+      return criteria.extractMaximumSeenOffset(this.schemaMapping.schema(), st, this.offset);
+    } catch (Throwable th) {
+      // TODO: do something about it
+      throw new ConnectException("Unable to fetch new maximum", th);
+    }
   }
 
   private void findDefaultAutoIncrementingColumn(Connection db) throws SQLException {
@@ -237,16 +262,6 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
     offset = criteria.extractValues(schemaMapping.schema(), record, offset, timestampGranularity);
     return new SourceRecord(partition, offset.toMap(), topic, record.schema(), record);
-  }
-
-  @Override
-  public void reset(long now, boolean resetOffset) {
-    // the task is being reset, any uncommitted offset needs to be reset as well
-    // use the previous committedOffset to set the running offset
-    if (resetOffset) {
-      this.offset = this.committedOffset;
-    }
-    super.reset(now, resetOffset);
   }
 
   @Override
