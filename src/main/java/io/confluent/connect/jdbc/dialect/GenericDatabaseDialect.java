@@ -17,7 +17,6 @@ package io.confluent.connect.jdbc.dialect;
 
 import java.time.ZoneOffset;
 import java.util.TimeZone;
-
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
@@ -183,10 +182,9 @@ public class GenericDatabaseDialect implements DatabaseDialect {
     this.jdbcUrl = config.getString(JdbcSourceConnectorConfig.CONNECTION_URL_CONFIG);
     this.jdbcUrlInfo = DatabaseDialects.extractJdbcUrlInfo(jdbcUrl);
     if (config instanceof JdbcSinkConfig) {
-      JdbcSinkConfig sinkConfig = (JdbcSinkConfig) config;
       catalogPattern = JdbcSourceTaskConfig.CATALOG_PATTERN_DEFAULT;
       schemaPattern = JdbcSourceTaskConfig.SCHEMA_PATTERN_DEFAULT;
-      tableTypes = sinkConfig.tableTypeNames();
+      tableTypes = new HashSet<>(Arrays.asList(JdbcSourceTaskConfig.TABLE_TYPE_DEFAULT));
       quoteSqlIdentifiers = QuoteMethod.get(
           config.getString(JdbcSinkConfig.QUOTE_SQL_IDENTIFIERS_CONFIG)
       );
@@ -212,12 +210,6 @@ public class GenericDatabaseDialect implements DatabaseDialect {
       timeZone = ((JdbcSinkConfig) config).timeZone;
     } else {
       timeZone = TimeZone.getTimeZone(ZoneOffset.UTC);
-    }
-
-    if (config instanceof JdbcSourceConnectorConfig) {
-      tsGranularity = TimestampGranularity.get((JdbcSourceConnectorConfig) config);
-    } else {
-      tsGranularity = TimestampGranularity.CONNECT_LOGICAL;
     }
   }
 
@@ -262,7 +254,7 @@ public class GenericDatabaseDialect implements DatabaseDialect {
       try {
         conn.close();
       } catch (Throwable e) {
-        glog.warn("Error while closing connection to {}", jdbcDriverInfo, e);
+        log.warn("Error while closing connection to {}", jdbcDriverInfo, e);
       }
     }
   }
@@ -1108,7 +1100,17 @@ public class GenericDatabaseDialect implements DatabaseDialect {
           glog.debug("NUMERIC with precision: '{}' and scale: '{}'", precision, scale);
           if (precision <= MAX_INTEGER_TYPE_PRECISION) { // fits in primitive data types.
             if (scale < 1 && scale >= NUMERIC_TYPE_SCALE_LOW) { // integer
-              builder.field(fieldName, integerSchema(optional, precision));
+              Schema schema;
+              if (precision > 9) {
+                schema = (optional) ? Schema.OPTIONAL_INT64_SCHEMA : Schema.INT64_SCHEMA;
+              } else if (precision > 4) {
+                schema = (optional) ? Schema.OPTIONAL_INT32_SCHEMA : Schema.INT32_SCHEMA;
+              } else if (precision > 2) {
+                schema = (optional) ? Schema.OPTIONAL_INT16_SCHEMA : Schema.INT16_SCHEMA;
+              } else {
+                schema = (optional) ? Schema.OPTIONAL_INT8_SCHEMA : Schema.INT8_SCHEMA;
+              }
+              builder.field(fieldName, schema);
               break;
             } else if (scale > 0) { // floating point - use double in all cases
               Schema schema = (optional) ? Schema.OPTIONAL_FLOAT64_SCHEMA : Schema.FLOAT64_SCHEMA;
@@ -1537,6 +1539,19 @@ public class GenericDatabaseDialect implements DatabaseDialect {
    */
   protected void free(Clob clob) throws SQLException {
     clob.free();
+  }
+
+  @Override
+  public String buildSelectMaxStatement(
+      TableId table,
+      ColumnId keyColumn
+  ) {
+    ExpressionBuilder builder = expressionBuilder();
+    builder.append("SELECT MAX(");
+    builder.append(keyColumn);
+    builder.append(") FROM");
+    builder.append(table);
+    return builder.toString();
   }
 
   @Override
