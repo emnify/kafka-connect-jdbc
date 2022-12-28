@@ -17,6 +17,7 @@ package io.confluent.connect.jdbc.source;
 
 import java.sql.Connection;
 import java.sql.Timestamp;
+import java.sql.SQLException;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
@@ -34,6 +36,7 @@ import io.confluent.connect.jdbc.util.DatabaseDialectRecommender;
 import io.confluent.connect.jdbc.util.DateTimeUtils;
 import io.confluent.connect.jdbc.util.EnumRecommender;
 import io.confluent.connect.jdbc.util.QuoteMethod;
+import io.confluent.connect.jdbc.util.TableId;
 import io.confluent.connect.jdbc.util.TimeZoneValidator;
 
 import java.util.function.BiFunction;
@@ -301,7 +304,7 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
   public static final String DB_TIMEZONE_CONFIG = "db.timezone";
   public static final String DB_TIMEZONE_DEFAULT = "UTC";
   private static final String DB_TIMEZONE_CONFIG_DOC =
-      "Name of the JDBC timezone used in the connector when "
+      "Name of the JDBC timezone that should be used in the connector when "
       + "querying with time-based criteria. Defaults to UTC.";
   private static final String DB_TIMEZONE_CONFIG_DISPLAY = "DB time zone";
 
@@ -789,6 +792,10 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
 
   public JdbcSourceConnectorConfig(Map<String, ?> props) {
     super(CONFIG_DEF, props);
+    String mode = getString(JdbcSourceConnectorConfig.MODE_CONFIG);
+    if (mode.equals(JdbcSourceConnectorConfig.MODE_UNSPECIFIED)) {
+      throw new ConfigException("Query mode must be specified");
+    }
   }
 
   public String topicPrefix() {

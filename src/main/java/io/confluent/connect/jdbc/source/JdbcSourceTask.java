@@ -177,6 +177,8 @@ public class JdbcSourceTask extends SourceTask {
 
     String incrementingColumn
         = config.getString(JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
+    boolean incrementingRelaxed
+        = config.getBoolean(JdbcSourceTaskConfig.INCREMENTING_RELAXED_MONOTONIC_CONFIG);
     List<String> timestampColumns
         = config.getList(JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
     Long timestampDelayInterval
@@ -250,6 +252,7 @@ public class JdbcSourceTask extends SourceTask {
                 topicPrefix,
                 null,
                 incrementingColumn,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
                 timeZone,
@@ -259,17 +262,17 @@ public class JdbcSourceTask extends SourceTask {
         );
       } else if (mode.equals(JdbcSourceTaskConfig.MODE_TIMESTAMP)) {
         tableQueue.add(
-            new TimestampTableQuerier(
+            new TimestampIncrementingTableQuerier(
                 dialect,
                 queryMode,
                 tableOrQuery,
                 topicPrefix,
                 timestampColumns,
+                null,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
-                timeZone,
-                suffix,
-                timestampGranularity
+                timeZone
             )
         );
       } else if (mode.endsWith(JdbcSourceTaskConfig.MODE_TIMESTAMP_INCREMENTING)) {
@@ -281,11 +284,10 @@ public class JdbcSourceTask extends SourceTask {
                 topicPrefix,
                 timestampColumns,
                 incrementingColumn,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
-                timeZone,
-                suffix,
-                timestampGranularity
+                timeZone
             )
         );
       }
@@ -486,6 +488,7 @@ public class JdbcSourceTask extends SourceTask {
       resetAndRequeueHead(querier, true);
     }
     closeResources();
+    return null;
   }
 
   private void resetAndRequeueHead(TableQuerier expectedHead, boolean resetOffset) {

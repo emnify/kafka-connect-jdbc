@@ -75,6 +75,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
   protected final TimestampGranularity timestampGranularity;
   private final List<ColumnId> timestampColumns;
   private String incrementingColumnName;
+  private boolean incrementingRelaxed;
   private long timestampDelay;
   private TimestampIncrementingOffset offset;
   private TimestampIncrementingCriteria criteria;
@@ -86,11 +87,13 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
                                            String topicPrefix,
                                            List<String> timestampColumnNames,
                                            String incrementingColumnName,
+                                           boolean incrementingRelaxed,
                                            Map<String, Object> offsetMap, Long timestampDelay,
                                            TimeZone timeZone, String suffix,
                                            TimestampGranularity timestampGranularity) {
     super(dialect, mode, name, topicPrefix, suffix);
     this.incrementingColumnName = incrementingColumnName;
+    this.incrementingRelaxed = incrementingRelaxed;
     this.timestampColumnNames = timestampColumnNames != null
         ? timestampColumnNames : Collections.emptyList();
     this.timestampDelay = timestampDelay;
