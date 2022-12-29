@@ -161,37 +161,32 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
 
   @Override
   public void reset(long now) {
-    super.reset(now);
     if (this.incrementingRelaxed
         && this.incrementingColumnName != null
-        && this.incrementingColumnName.length() > 0) {
+        && this.incrementingColumnName.length() > 0
+        && this.db != null
+    ) {
       updateMaximumSeenOffset();
+    } else {
+      if (this.incrementingRelaxed) {
+        log.warn("Skipping maximum update, but incrementing.relaxed.monotonic is enabled.");
+      }
     }
+    super.reset(now);
   }
 
-  private void refreshMaximumSeenOffset() throws ConnectException {
-    this.offset = fetchNewMaximum();
-  }
-
-  private TimestampIncrementingOffset fetchNewMaximum() throws ConnectException {
-    ExpressionBuilder builder = dialect.expressionBuilder();
-    builder.append("SELECT MAX(");
-    builder.append(incrementingColumnName);
-    builder.append(") FROM");
-    builder.append(tableId);
-    String queryString = builder.toString();
-    recordQuery(queryString);
-    try {
-      stmt = dialect.createPreparedStatement(db, queryString);
-      ResultSet rs = stmt.executeQuery();
-      FieldSetter se = this.schemaMapping.fieldSetters().stream()
-              .filter(fs -> fs.field().schema().name() == incrementingColumnName).findFirst().get();
-      Struct st = new Struct(this.schemaMapping.schema());
-      se.setField(st, rs);
-      return criteria.extractMaximumSeenOffset(this.schemaMapping.schema(), st, this.offset);
-    } catch (Throwable th) {
-      // TODO: do something about it
-      throw new ConnectException("Unable to fetch new maximum", th);
+  private void updateMaximumSeenOffset() throws ConnectException {
+    if (this.db != null) {
+      try (
+              PreparedStatement st = createSelectMaximumPreparedStatement(db);
+              ResultSet rs = executeMaxQuery(st)
+      ) {
+        this.offset = extractMaximumOffset(rs);
+      } catch (Throwable th) {
+        throw new ConnectException("Unable to fetch new maximum", th);
+      }
+    } else {
+      log.warn("Unable to update maximum seen offset. Database connection closed.");
     }
   }
 
