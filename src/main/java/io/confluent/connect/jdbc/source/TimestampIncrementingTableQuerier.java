@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.SQLException;
 import java.util.List;
@@ -35,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Collections;
 import java.util.TimeZone;
-import java.util.Optional;
 
 import io.confluent.connect.jdbc.dialect.DatabaseDialect;
 import io.confluent.connect.jdbc.source.SchemaMapping.FieldSetter;
@@ -260,20 +257,27 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
         throw new DataException(e);
       }
     }
-    offset = criteria.extractValues(schemaMapping.schema(), record, offset, timestampGranularity);
+    offset = criteria.extractValues(schemaMapping.schema(), record, offset);
     return new SourceRecord(partition, offset.toMap(), topic, record.schema(), record);
   }
 
   protected TimestampIncrementingOffset extractMaximumOffset(ResultSet rs) throws SQLException {
     try {
-      Optional<FieldSetter> se = this.schemaMapping.fieldSetters().stream()
-              .filter(
-                fs -> fs.field().schema().name() == incrementingColumnName
-              ).findFirst();
-      assert se.isPresent();
-      Struct st = new Struct(this.schemaMapping.schema());
-      se.get().setField(st, rs);
-      return criteria.extractMaximumSeenOffset(this.schemaMapping.schema(), st, this.offset);
+      // TODO: add test case
+      if (rs.next()) {
+        String schemaName = tableId != null ? tableId.tableName() : null; // backwards compatible
+        SchemaMapping mapping = SchemaMapping.create(schemaName, resultSet.getMetaData(), dialect);
+        assert !mapping.fieldSetters().isEmpty();
+        FieldSetter se = mapping.fieldSetters().get(0);
+        log.info("Found field {} with schema", se.field().name(), se.field().schema());
+        assert se.field().schema().name() == incrementingColumnName;
+        Struct st = new Struct(mapping.schema());
+        se.setField(st, rs);
+        return criteria.extractMaximumSeenOffset(this.schemaMapping.schema(), st, this.offset);
+      } else {
+        log.warn("No maximum found");
+        return this.offset;
+      }
     } catch (IOException e) {
       log.warn("Error extracting maximum", e);
       throw new ConnectException(e);
@@ -304,7 +308,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
 
   @Override
   public Long maximumSeenValue() {
-    return offset.getIncrementingOffset();
+    return offset.getMaximumSeenOffset();
   }
 
   @Override
