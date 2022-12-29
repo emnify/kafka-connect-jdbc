@@ -45,7 +45,12 @@ spec:
       }
     }
     stage('Deploy') {
-      when { branch 'master' }
+      when {
+        anyOf {
+          branch 'master'
+          branch 'emnify-11.x'
+        }
+      }
       steps {
         sh 'mvn deploy -q -B -s settings.xml -DskipTests=true'
       }
