@@ -30,6 +30,8 @@ public class TimestampIncrementingOffset {
   static final String TIMESTAMP_NANOS_FIELD = "timestamp_nanos";
 
   private final Long incrementingOffset;
+  private final Long maximumSeenOffset;
+
   private final Timestamp timestampOffset;
 
   /**
@@ -39,13 +41,19 @@ public class TimestampIncrementingOffset {
    * @param incrementingOffset the incrementing offset.
    *                           If null, {@link #getIncrementingOffset()} will return -1.
    */
-  public TimestampIncrementingOffset(Timestamp timestampOffset, Long incrementingOffset) {
+  public TimestampIncrementingOffset(Timestamp timestampOffset, Long incrementingOffset,
+                                     Long maximumSeenOffset) {
     this.timestampOffset = timestampOffset;
     this.incrementingOffset = incrementingOffset;
+    this.maximumSeenOffset = maximumSeenOffset;
   }
 
   public long getIncrementingOffset() {
     return incrementingOffset == null ? -1 : incrementingOffset;
+  }
+
+  public long getMaximumSeenOffset() {
+    return maximumSeenOffset == null ? -1 : maximumSeenOffset;
   }
 
   public Timestamp getTimestampOffset() {
@@ -70,7 +78,7 @@ public class TimestampIncrementingOffset {
 
   public static TimestampIncrementingOffset fromMap(Map<String, ?> map) {
     if (map == null || map.isEmpty()) {
-      return new TimestampIncrementingOffset(null, null);
+      return new TimestampIncrementingOffset(null, null, null);
     }
 
     Long incr = (Long) map.get(INCREMENTING_FIELD);
@@ -85,7 +93,7 @@ public class TimestampIncrementingOffset {
         ts.setNanos(nanos.intValue());
       }
     }
-    return new TimestampIncrementingOffset(ts, incr);
+    return new TimestampIncrementingOffset(ts, incr, null);
   }
 
   @Override
@@ -100,7 +108,8 @@ public class TimestampIncrementingOffset {
     TimestampIncrementingOffset that = (TimestampIncrementingOffset) o;
 
     return Objects.equals(incrementingOffset, that.incrementingOffset)
-        && Objects.equals(timestampOffset, that.timestampOffset);
+        && Objects.equals(timestampOffset, that.timestampOffset)
+        && Objects.equals(maximumSeenOffset, that.maximumSeenOffset);
   }
 
   @Override

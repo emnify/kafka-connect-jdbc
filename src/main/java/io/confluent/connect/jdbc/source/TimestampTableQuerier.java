@@ -73,6 +73,7 @@ public class TimestampTableQuerier extends TimestampIncrementingTableQuerier {
         topicPrefix,
         timestampColumnNames,
         null,
+        false,
         offsetMap,
         timestampDelay,
         timeZone,
@@ -132,7 +133,7 @@ public class TimestampTableQuerier extends TimestampIncrementingTableQuerier {
         || canCommitTimestamp(currentRecord.timestamp(), nextRecord.timestamp())) {
       latestCommittableTimestamp = currentRecord.timestamp();
       // set current in memory offset to the latestCommittableTimestamp
-      this.offset = new TimestampIncrementingOffset(latestCommittableTimestamp, null);
+      this.offset = new TimestampIncrementingOffset(latestCommittableTimestamp, null, null);
     }
     return currentRecord.record(offset);
   }

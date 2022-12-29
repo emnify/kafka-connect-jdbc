@@ -262,17 +262,17 @@ public class JdbcSourceTask extends SourceTask {
         );
       } else if (mode.equals(JdbcSourceTaskConfig.MODE_TIMESTAMP)) {
         tableQueue.add(
-            new TimestampIncrementingTableQuerier(
+            new TimestampTableQuerier(
                 dialect,
                 queryMode,
                 tableOrQuery,
                 topicPrefix,
                 timestampColumns,
                 null,
-                incrementingRelaxed,
-                offset,
                 timestampDelayInterval,
-                timeZone
+                timeZone,
+                suffix,
+                timestampGranularity
             )
         );
       } else if (mode.endsWith(JdbcSourceTaskConfig.MODE_TIMESTAMP_INCREMENTING)) {
@@ -287,7 +287,9 @@ public class JdbcSourceTask extends SourceTask {
                 incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
-                timeZone
+                timeZone,
+                suffix,
+                timestampGranularity
             )
         );
       }
@@ -488,7 +490,6 @@ public class JdbcSourceTask extends SourceTask {
       resetAndRequeueHead(querier, true);
     }
     closeResources();
-    return null;
   }
 
   private void resetAndRequeueHead(TableQuerier expectedHead, boolean resetOffset) {

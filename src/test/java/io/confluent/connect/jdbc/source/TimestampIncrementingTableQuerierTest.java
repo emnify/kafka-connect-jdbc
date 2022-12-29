@@ -96,6 +96,7 @@ public class TimestampIncrementingTableQuerierTest {
         "",
         timestampMode ? TIMESTAMP_COLUMNS : null,
         INCREMENTING_COLUMN,
+        true,
         initialOffset.toMap(),
         10211197100L, // Timestamp delay
         TimeZone.getTimeZone("UTC"),
@@ -116,7 +117,7 @@ public class TimestampIncrementingTableQuerierTest {
   private void expectNewQuery() throws Exception {
     expect(dialect.createPreparedStatement(eq(db), anyObject())).andReturn(stmt);
     expect(dialect.expressionBuilder()).andReturn(expressionBuilder);
-    expect(dialect.criteriaFor(anyObject(), anyObject())).andReturn(criteria);
+    expect(dialect.criteriaFor(anyObject(), anyObject(), anyObject())).andReturn(criteria);
     dialect.validateSpecificColumnTypes(anyObject(), anyObject());
     expectLastCall();
     criteria.whereClause(expressionBuilder);
@@ -246,10 +247,10 @@ public class TimestampIncrementingTableQuerierTest {
   }
 
   private static TimestampIncrementingOffset offset(Long inc) {
-    return new TimestampIncrementingOffset(null, inc);
+    return new TimestampIncrementingOffset(null, inc, null);
   }
 
   private static TimestampIncrementingOffset offset(Timestamp ts, Long inc) {
-    return new TimestampIncrementingOffset(ts, inc);
+    return new TimestampIncrementingOffset(ts, inc, null);
   }
 }

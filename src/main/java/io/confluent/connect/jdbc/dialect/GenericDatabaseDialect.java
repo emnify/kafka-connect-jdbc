@@ -211,6 +211,12 @@ public class GenericDatabaseDialect implements DatabaseDialect {
     } else {
       timeZone = TimeZone.getTimeZone(ZoneOffset.UTC);
     }
+
+    if (config instanceof JdbcSourceConnectorConfig) {
+      tsGranularity = TimestampGranularity.get((JdbcSourceConnectorConfig) config);
+    } else {
+      tsGranularity = TimestampGranularity.CONNECT_LOGICAL;
+    }
   }
 
   @Override

@@ -349,6 +349,7 @@ public class TimestampIncrementingCriteriaTest {
 
     criteriaTs = new TimestampIncrementingCriteria(
         null,
+        true,
         Collections.singletonList(new ColumnId(TABLE_ID, invalidColumnName)),
         utcTimeZone
     );
@@ -370,6 +371,7 @@ public class TimestampIncrementingCriteriaTest {
 
     criteriaTs = new TimestampIncrementingCriteria(
         null,
+        true,
         Collections.singletonList(new ColumnId(TABLE_ID, lowerCaseColumnName)),
         utcTimeZone
     );

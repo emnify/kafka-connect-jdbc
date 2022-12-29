@@ -52,8 +52,8 @@ public class TableQuerierTest {
       .thenReturn(new TableId(null,null,TABLE_NAME));	  
     when(databaseDialectMock.expressionBuilder())
       .thenReturn(ExpressionBuilder.create());
-    when(databaseDialectMock.criteriaFor(Matchers.any(ColumnId.class), Matchers.anyListOf(ColumnId.class)))
-      .thenReturn(new TimestampIncrementingCriteria(new ColumnId(new TableId(null,null,TABLE_NAME),INCREMENTING_COLUMN_NAME), null,null));
+    when(databaseDialectMock.criteriaFor(Matchers.any(ColumnId.class), Matchers.anyBoolean(), Matchers.anyListOf(ColumnId.class)))
+      .thenReturn(new TimestampIncrementingCriteria(new ColumnId(new TableId(null,null,TABLE_NAME),INCREMENTING_COLUMN_NAME),true, null,null));
 	    
     connectionMock = mock(Connection.class);	  
   }
@@ -66,7 +66,8 @@ public class TableQuerierTest {
                                                     TABLE_NAME, 
                                                     null, 
                                                     null,
-                                                    INCREMENTING_COLUMN_NAME, 
+                                                    INCREMENTING_COLUMN_NAME,
+                                                    true,
                                                     null,
                                                     TIMESTAMP_DELAY,
                                                     null,
@@ -87,7 +88,8 @@ public class TableQuerierTest {
                                                     QUERY, 
                                                     null, 
                                                     null, 
-                                                    INCREMENTING_COLUMN_NAME, 
+                                                    INCREMENTING_COLUMN_NAME,
+                                                    true,
                                                     null, 
                                                     TIMESTAMP_DELAY, 
                                                     null, 

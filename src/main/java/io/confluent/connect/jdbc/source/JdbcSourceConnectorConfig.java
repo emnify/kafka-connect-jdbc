@@ -17,7 +17,6 @@ package io.confluent.connect.jdbc.source;
 
 import java.sql.Connection;
 import java.sql.Timestamp;
-import java.sql.SQLException;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,17 +25,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.microsoft.sqlserver.jdbc.SQLServerConnection;
 import io.confluent.connect.jdbc.dialect.DatabaseDialect;
 import io.confluent.connect.jdbc.dialect.DatabaseDialects;
 import io.confluent.connect.jdbc.util.DatabaseDialectRecommender;
 import io.confluent.connect.jdbc.util.DateTimeUtils;
 import io.confluent.connect.jdbc.util.EnumRecommender;
 import io.confluent.connect.jdbc.util.QuoteMethod;
-import io.confluent.connect.jdbc.util.TableId;
 import io.confluent.connect.jdbc.util.TimeZoneValidator;
 
 import java.util.function.BiFunction;
@@ -347,13 +343,6 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
   public static final String MODE_GROUP = "Mode";
   public static final String CONNECTOR_GROUP = "Connector";
 
-  // We want the table recommender to only cache values for a short period of time so that the
-  // blacklist and whitelist config properties can use a single query.
-  private static final Recommender TABLE_RECOMMENDER = new CachingRecommender(
-      new TableRecommender(),
-      Time.SYSTEM,
-      TimeUnit.SECONDS.toMillis(5)
-  );
   private static final Recommender MODE_DEPENDENTS_RECOMMENDER =  new ModeDependentsRecommender();
 
 
@@ -435,7 +424,7 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
                 .addErrorMessage("Isolation mode of `"
                         + TransactionIsolationMode.SQL_SERVER_SNAPSHOT.name()
                         + "` can only be configured with a Sql Server Dialect"
-          );
+            );
       }
     }
 
@@ -906,6 +895,7 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
       return new LinkedList<>();
     }
 
+    @SuppressWarnings("checkstyle:CyclomaticComplexity")
     @Override
     public boolean visible(String name, Map<String, Object> config) {
       String mode = (String) config.get(MODE_CONFIG);
@@ -1033,8 +1023,6 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
           return Connection.TRANSACTION_REPEATABLE_READ;
         case SERIALIZABLE:
           return Connection.TRANSACTION_SERIALIZABLE;
-        case SQL_SERVER_SNAPSHOT:
-          return SQLServerConnection.TRANSACTION_SNAPSHOT;
         default:
           return -1;
       }

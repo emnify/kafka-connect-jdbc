@@ -37,6 +37,7 @@ import java.util.TimeZone;
 import io.confluent.connect.jdbc.dialect.DatabaseDialect;
 import io.confluent.connect.jdbc.source.SchemaMapping.FieldSetter;
 import io.confluent.connect.jdbc.source.TimestampIncrementingCriteria.CriteriaValues;
+import io.confluent.connect.jdbc.source.JdbcSourceConnectorConfig.TimestampGranularity;
 import io.confluent.connect.jdbc.util.ColumnDefinition;
 import io.confluent.connect.jdbc.util.ColumnId;
 import io.confluent.connect.jdbc.util.DateTimeUtils;
@@ -75,10 +76,6 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
   private String incrementingColumnName;
   private boolean incrementingRelaxed;
   private long timestampDelay;
-  private TimestampIncrementingOffset offset;
-  private TimestampIncrementingCriteria criteria;
-  private final Map<String, String> partition;
-  private final String topic;
   private final TimeZone timeZone;
 
   public TimestampIncrementingTableQuerier(DatabaseDialect dialect, QueryMode mode, String name,
@@ -96,7 +93,6 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
         ? timestampColumnNames : Collections.emptyList();
     this.timestampDelay = timestampDelay;
     this.committedOffset = this.offset = TimestampIncrementingOffset.fromMap(offsetMap);
-
     this.timestampColumns = new ArrayList<>();
     for (String timestampColumn : this.timestampColumnNames) {
       if (timestampColumn != null && !timestampColumn.isEmpty()) {
@@ -120,7 +116,10 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
 
     this.timeZone = timeZone;
+    this.timestampGranularity = timestampGranularity;
   }
+
+  private static String DATETIME = "datetime";
 
   @Override
   protected void createPreparedStatement(Connection db) throws SQLException {
@@ -152,12 +151,12 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     
     String queryString = builder.toString();
     recordQuery(queryString);
-    log.trace("{} prepared SQL query: {}", this, queryString);
+    log.debug("{} prepared SQL query: {}", this, queryString);
     stmt = dialect.createPreparedStatement(db, queryString);
   }
 
   @Override
-  public void reset(long now) {
+  public void reset(long now, boolean resetOffset) {
     if (this.incrementingRelaxed
         && this.incrementingColumnName != null
         && this.incrementingColumnName.length() > 0
@@ -169,7 +168,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
         log.warn("Skipping maximum update, but incrementing.relaxed.monotonic is enabled.");
       }
     }
-    super.reset(now);
+    super.reset(now, resetOffset);
   }
 
   private void updateMaximumSeenOffset() throws ConnectException {
@@ -257,7 +256,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
         throw new DataException(e);
       }
     }
-    offset = criteria.extractValues(schemaMapping.schema(), record, offset);
+    offset = criteria.extractValues(schemaMapping.schema(), record, offset, timestampGranularity);
     return new SourceRecord(partition, offset.toMap(), topic, record.schema(), record);
   }
 

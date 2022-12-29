@@ -93,7 +93,7 @@ public class TimestampTableQuerierTest {
         tableName,
         "",
         TIMESTAMP_COLUMNS,
-        new TimestampIncrementingOffset(initialTimestampOffset, null).toMap(),
+        new TimestampIncrementingOffset(initialTimestampOffset, null, null).toMap(),
         10211197100L, // Timestamp delay
         TimeZone.getTimeZone("UTC"),
         "",
@@ -113,7 +113,7 @@ public class TimestampTableQuerierTest {
   private void expectNewQuery() throws Exception {
     expect(dialect.createPreparedStatement(eq(db), anyObject())).andReturn(stmt);
     expect(dialect.expressionBuilder()).andReturn(expressionBuilder);
-    expect(dialect.criteriaFor(anyObject(), anyObject())).andReturn(criteria);
+    expect(dialect.criteriaFor(anyObject(), anyObject(), anyObject())).andReturn(criteria);
     dialect.validateSpecificColumnTypes(anyObject(), anyObject());
     expectLastCall();
     criteria.whereClause(expressionBuilder);
@@ -340,7 +340,7 @@ public class TimestampTableQuerierTest {
     expect(schemaMapping.schema()).andReturn(schema()).times(2);
     expect(resultSet.next()).andReturn(true);
     expect(schemaMapping.fieldSetters()).andReturn(Collections.emptyList());
-    TimestampIncrementingOffset offset = new TimestampIncrementingOffset(timestamp, null);
+    TimestampIncrementingOffset offset = new TimestampIncrementingOffset(timestamp, null, null);
     expect(criteria.extractValues(anyObject(), anyObject(), anyObject(), anyObject())).andReturn(offset);
   }
 
@@ -358,6 +358,6 @@ public class TimestampTableQuerierTest {
   }
 
   private static TimestampIncrementingOffset offset(Timestamp ts, Long inc) {
-    return new TimestampIncrementingOffset(ts, inc);
+    return new TimestampIncrementingOffset(ts, inc, null);
   }
 }
