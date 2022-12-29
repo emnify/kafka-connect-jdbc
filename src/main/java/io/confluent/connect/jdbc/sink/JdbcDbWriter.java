@@ -86,9 +86,8 @@ public class JdbcDbWriter {
         connection.rollback();
       } catch (SQLException sqle) {
         e.addSuppressed(sqle);
-      } finally {
-        throw e;
       }
+      throw e;
     }
   }
 

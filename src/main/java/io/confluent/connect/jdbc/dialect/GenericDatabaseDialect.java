@@ -182,9 +182,10 @@ public class GenericDatabaseDialect implements DatabaseDialect {
     this.jdbcUrl = config.getString(JdbcSourceConnectorConfig.CONNECTION_URL_CONFIG);
     this.jdbcUrlInfo = DatabaseDialects.extractJdbcUrlInfo(jdbcUrl);
     if (config instanceof JdbcSinkConfig) {
+      JdbcSinkConfig sinkConfig = (JdbcSinkConfig) config;
       catalogPattern = JdbcSourceTaskConfig.CATALOG_PATTERN_DEFAULT;
       schemaPattern = JdbcSourceTaskConfig.SCHEMA_PATTERN_DEFAULT;
-      tableTypes = new HashSet<>(Arrays.asList(JdbcSourceTaskConfig.TABLE_TYPE_DEFAULT));
+      tableTypes = sinkConfig.tableTypeNames();
       quoteSqlIdentifiers = QuoteMethod.get(
           config.getString(JdbcSinkConfig.QUOTE_SQL_IDENTIFIERS_CONFIG)
       );
@@ -1249,9 +1250,8 @@ public class GenericDatabaseDialect implements DatabaseDialect {
         connection.rollback();
       } catch (SQLException sqle) {
         e.addSuppressed(sqle);
-      } finally {
-        throw e;
       }
+      throw e;
     }
   }
 

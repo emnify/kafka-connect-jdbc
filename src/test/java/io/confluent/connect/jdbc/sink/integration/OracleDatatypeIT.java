@@ -158,7 +158,7 @@ public class OracleDatatypeIT extends BaseConnectorIT {
             .put("int32", 3)
             .put("int64", 4L)
             .put("float32", (float) 5.0)
-            .put("float64", (double) 6.0)
+            .put("float64", 6.0)
             .put("string", "7")
             .put("bytes", "8".getBytes(StandardCharsets.UTF_8))
             .put("date", date)
@@ -174,7 +174,7 @@ public class OracleDatatypeIT extends BaseConnectorIT {
             assertEquals(3, rs.getInt(4));
             assertEquals(4L, rs.getLong(5));
             assertEquals((float) 5.0, rs.getFloat(6), 0.01);
-            assertEquals((double) 6.0, rs.getDouble(7), 0.01);
+            assertEquals(6.0, rs.getDouble(7), 0.01);
             assertEquals("7", rs.getString(8));
             assertEquals("8", new String(rs.getBytes(9)));
             assertEquals(date, rs.getDate(10,
