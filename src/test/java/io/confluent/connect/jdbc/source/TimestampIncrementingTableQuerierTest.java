@@ -38,10 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 
-import static org.easymock.EasyMock.anyObject;
-import static org.easymock.EasyMock.eq;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.mock;
+import static org.easymock.EasyMock.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -96,7 +93,7 @@ public class TimestampIncrementingTableQuerierTest {
         "",
         timestampMode ? TIMESTAMP_COLUMNS : null,
         INCREMENTING_COLUMN,
-        true,
+        false,
         initialOffset.toMap(),
         10211197100L, // Timestamp delay
         TimeZone.getTimeZone("UTC"),
@@ -117,7 +114,7 @@ public class TimestampIncrementingTableQuerierTest {
   private void expectNewQuery() throws Exception {
     expect(dialect.createPreparedStatement(eq(db), anyObject())).andReturn(stmt);
     expect(dialect.expressionBuilder()).andReturn(expressionBuilder);
-    expect(dialect.criteriaFor(anyObject(), anyObject(), anyObject())).andReturn(criteria);
+    expect(dialect.criteriaFor(anyObject(), anyBoolean(), anyObject())).andReturn(criteria);
     dialect.validateSpecificColumnTypes(anyObject(), anyObject());
     expectLastCall();
     criteria.whereClause(expressionBuilder);
@@ -235,6 +232,12 @@ public class TimestampIncrementingTableQuerierTest {
     expect(resultSet.next()).andReturn(true);
     expect(schemaMapping.fieldSetters()).andReturn(Collections.emptyList());
     expect(criteria.extractValues(anyObject(), anyObject(), anyObject(), anyObject())).andReturn(offset);
+  }
+
+  private void expectMaxQuery() throws Exception {
+    expect(dialect.createPreparedStatement(anyObject(), anyObject())).andReturn(stmt);
+    expect(dialect.expressionBuilder()).andReturn(expressionBuilder);
+    expect(dialect.criteriaFor(anyObject(), anyBoolean(), anyObject())).andReturn(criteria);
   }
 
   private void expectReset() throws Exception {

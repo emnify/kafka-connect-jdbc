@@ -168,6 +168,9 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
         log.warn("Skipping maximum update, but incrementing.relaxed.monotonic is enabled.");
       }
     }
+    if (resetOffset) {
+      this.offset = this.committedOffset;
+    }
     super.reset(now, resetOffset);
   }
 

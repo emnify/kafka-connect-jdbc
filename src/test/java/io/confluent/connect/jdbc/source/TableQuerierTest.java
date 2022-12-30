@@ -77,7 +77,7 @@ public class TableQuerierTest {
       
     querier.createPreparedStatement(connectionMock);
 
-    verify(databaseDialectMock, times(1)).createPreparedStatement(Matchers.any(),Matchers.eq("SELECT * FROM \"name\" WHERE \"name\".\"column\" > ? ORDER BY \"name\".\"column\" ASC /* SUFFIX */"));
+    verify(databaseDialectMock, times(1)).createPreparedStatement(Matchers.any(),Matchers.eq("SELECT * FROM \"name\" WHERE \"name\".\"column\" > ? AND \"name\".\"column\" <= ? ORDER BY \"name\".\"column\" ASC /* SUFFIX */"));
   }
 
   @Test
@@ -99,7 +99,7 @@ public class TableQuerierTest {
       
     querier.createPreparedStatement(connectionMock);
 
-    verify(databaseDialectMock, times(1)).createPreparedStatement(Matchers.any(),Matchers.eq("SELECT * FROM name WHERE \"name\".\"column\" > ? ORDER BY \"name\".\"column\" ASC /* SUFFIX */"));
+    verify(databaseDialectMock, times(1)).createPreparedStatement(Matchers.any(),Matchers.eq("SELECT * FROM name WHERE \"name\".\"column\" > ? AND \"name\".\"column\" <= ? ORDER BY \"name\".\"column\" ASC /* SUFFIX */"));
   }
   
   @Test
