@@ -116,6 +116,7 @@ public class TimestampIncrementingOffset {
   public int hashCode() {
     int result = incrementingOffset != null ? incrementingOffset.hashCode() : 0;
     result = 31 * result + (timestampOffset != null ? timestampOffset.hashCode() : 0);
+    result = 31 * result + (maximumSeenOffset != null ? maximumSeenOffset.hashCode() : 0);
     return result;
   }
 }

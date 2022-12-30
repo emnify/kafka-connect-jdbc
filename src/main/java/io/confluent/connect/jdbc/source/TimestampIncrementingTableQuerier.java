@@ -23,11 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Timestamp;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -173,6 +169,28 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
     super.reset(now, resetOffset);
   }
+
+  @Override
+  public void maybeStartQuery(Connection db) throws SQLException, ConnectException {
+    if (resultSet == null) {
+      this.db = db;
+      stmt = getOrCreatePreparedStatement(db);
+      resultSet = executeQuery();
+      String schemaName = tableId != null ? tableId.tableName() : null; // backwards compatible
+      ResultSetMetaData metadata = resultSet.getMetaData();
+      dialect.validateSpecificColumnTypes(metadata, timestampColumns);
+      schemaMapping = SchemaMapping.create(schemaName, metadata, dialect);
+    } else {
+      log.trace("Current ResultSet {} isn't null. Continuing to seek.", resultSet.hashCode());
+    }
+
+    // This is called everytime during poll() before extracting records,
+    // to ensure that the previous run succeeded, allowing us to move the committedOffset forward.
+    // This action is a no-op for the first poll()
+    this.committedOffset = this.offset;
+    log.trace("Set the committed offset: {}", committedOffset.getTimestampOffset());
+  }
+
 
   private void updateMaximumSeenOffset() throws ConnectException {
     if (this.db != null) {

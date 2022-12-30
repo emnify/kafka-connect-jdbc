@@ -268,7 +268,7 @@ public class JdbcSourceTask extends SourceTask {
                 tableOrQuery,
                 topicPrefix,
                 timestampColumns,
-                null,
+                offset,
                 timestampDelayInterval,
                 timeZone,
                 suffix,
