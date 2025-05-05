@@ -26,7 +26,7 @@
     <groupId>io.confluent</groupId>
     <artifactId>kafka-connect-jdbc</artifactId>
     <packaging>jar</packaging>
-    <version>10.9.0-EMNIFY</version>
+    <version>10.9.1-EMNIFY</version>
     <name>kafka-connect-jdbc</name>
     <organization>
         <name>Confluent, Inc.</name>
@@ -53,6 +53,7 @@
     </scm>
 
     <properties>
+        <awswrapper.version>2.5.6</awswrapper.version>
         <derby.version>10.14.2.0</derby.version>
         <commons-io.version>2.14.0</commons-io.version>
         <kafka.connect.maven.plugin.version>0.11.1</kafka.connect.maven.plugin.version>
@@ -95,6 +96,11 @@
     </pluginRepositories>
 
     <dependencies>
+        <dependency>
+            <groupId>software.amazon.jdbc</groupId>
+            <artifactId>aws-advanced-jdbc-wrapper</artifactId>
+            <version>${awswrapper.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-api</artifactId>

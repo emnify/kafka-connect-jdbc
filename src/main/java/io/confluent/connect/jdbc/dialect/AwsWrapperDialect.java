@@ -39,22 +39,21 @@ import java.util.Collection;
  * mysql dialect would be normally sufficient, but it
  * seems that it supports only a single driver
  */
-public class AwsWrapperDialectMysql extends GenericDatabaseDialect {
+public class AwsWrapperDialect extends GenericDatabaseDialect {
 
-  private final Logger log = LoggerFactory.getLogger(AwsWrapperDialectMysql.class);
+  private final Logger log = LoggerFactory.getLogger(AwsWrapperDialect.class);
 
   /**
    * The provider for {@link MySqlDatabaseDialect}.
    */
   public static class Provider extends DatabaseDialectProvider.SubprotocolBasedProvider {
     public Provider() {
-      super(AwsWrapperDialectMysql.class.getSimpleName(), "aws-wrapper:mysql",
-          "aws-wrapper:postgres");
+      super(AwsWrapperDialect.class.getSimpleName(), "aws-wrapper");
     }
 
     @Override
     public DatabaseDialect create(AbstractConfig config) {
-      return new AwsWrapperDialectMysql(config);
+      return new AwsWrapperDialect(config);
     }
   }
 
@@ -63,7 +62,7 @@ public class AwsWrapperDialectMysql extends GenericDatabaseDialect {
    *
    * @param config the connector configuration; may not be null
    */
-  public AwsWrapperDialectMysql(AbstractConfig config) {
+  public AwsWrapperDialect(AbstractConfig config) {
     super(config, new IdentifierRules(".", "`", "`"));
   }
 
