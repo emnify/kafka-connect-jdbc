@@ -69,6 +69,7 @@ spec:
         anyOf {
           branch 'emnify'
           branch 'emnify-11.x'
+          branch 'emnify-latest'
         }
       }
       steps {
