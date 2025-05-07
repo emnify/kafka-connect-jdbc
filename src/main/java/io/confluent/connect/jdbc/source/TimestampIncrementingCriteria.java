@@ -288,6 +288,10 @@ public class TimestampIncrementingCriteria {
     }
   }
 
+  protected boolean isIncrementingRelaxed() {
+    return this.incrementingRelaxed;
+  }
+
   /**
    * Extract the incrementing column value from the row.
    *

@@ -249,10 +249,10 @@ public class TimestampIncrementingTableQuerierTest {
   }
 
   private static TimestampIncrementingOffset offset(Long inc) {
-    return new TimestampIncrementingOffset(null, inc);
+    return new TimestampIncrementingOffset(null, inc, null);
   }
 
   private static TimestampIncrementingOffset offset(Timestamp ts, Long inc) {
-    return new TimestampIncrementingOffset(ts, inc);
+    return new TimestampIncrementingOffset(ts, inc, null);
   }
 }
