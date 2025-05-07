@@ -1052,13 +1052,13 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
         QUERY_RETRIES_DISPLAY
     ).define(INCREMENTING_RELAXED_MONOTONIC_CONFIG,
         Type.BOOLEAN,
-        INCREMENTING_COLUMN_NAME_DEFAULT,
+        INCREMENTING_RELAXED_MONOTONIC_DEFAULT,
         Importance.LOW,
-        INCREMENTING_COLUMN_NAME_DOC,
+        INCREMENTING_RELAXED_MONOTONIC_DOC,
         MODE_GROUP,
         ++orderInGroup,
         Width.MEDIUM,
-        INCREMENTING_COLUMN_NAME_DISPLAY
+        INCREMENTING_RELAXED_MONOTONIC_DISPLAY
     );
   }
 
