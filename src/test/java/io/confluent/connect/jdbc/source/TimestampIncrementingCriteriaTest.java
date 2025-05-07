@@ -68,10 +68,10 @@ public class TimestampIncrementingCriteriaTest {
 
   @Before
   public void beforeEach() {
-    criteria = new TimestampIncrementingCriteria(null, null, utcTimeZone);
-    criteriaInc = new TimestampIncrementingCriteria(INCREMENTING_COLUMN, null, utcTimeZone);
-    criteriaTs = new TimestampIncrementingCriteria(null, TS_COLUMNS, utcTimeZone);
-    criteriaIncTs = new TimestampIncrementingCriteria(INCREMENTING_COLUMN, TS_COLUMNS, utcTimeZone);
+    criteria = new TimestampIncrementingCriteria(null, null, utcTimeZone, false);
+    criteriaInc = new TimestampIncrementingCriteria(INCREMENTING_COLUMN, null, utcTimeZone, false);
+    criteriaTs = new TimestampIncrementingCriteria(null, TS_COLUMNS, utcTimeZone, false);
+    criteriaIncTs = new TimestampIncrementingCriteria(INCREMENTING_COLUMN, TS_COLUMNS, utcTimeZone, false);
     identifierQuoting = null;
     rules = null;
     builder = null;
@@ -428,7 +428,7 @@ public class TimestampIncrementingCriteriaTest {
     criteriaTs = new TimestampIncrementingCriteria(
         null,
         Collections.singletonList(new ColumnId(TABLE_ID, invalidColumnName)),
-        utcTimeZone
+        utcTimeZone, false
     );
 
     schema = SchemaBuilder.struct()
@@ -449,7 +449,7 @@ public class TimestampIncrementingCriteriaTest {
     criteriaTs = new TimestampIncrementingCriteria(
         null,
         Collections.singletonList(new ColumnId(TABLE_ID, lowerCaseColumnName)),
-        utcTimeZone
+        utcTimeZone, false
     );
 
     schema = SchemaBuilder.struct()

@@ -78,6 +78,7 @@ public class TimestampIncrementingCriteria {
   protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final List<ColumnId> timestampColumns;
   protected final ColumnId incrementingColumn;
+  protected final boolean incrementingRelaxed;
   protected final TimeZone timeZone;
   private final LruCache<Schema, List<String>> caseAdjustedTimestampColumns;
 
@@ -85,11 +86,13 @@ public class TimestampIncrementingCriteria {
   public TimestampIncrementingCriteria(
       ColumnId incrementingColumn,
       List<ColumnId> timestampColumns,
-      TimeZone timeZone
+      TimeZone timeZone,
+      boolean incrementingRelaxed
   ) {
     this.timestampColumns =
         timestampColumns != null ? timestampColumns : Collections.<ColumnId>emptyList();
     this.incrementingColumn = incrementingColumn;
+    this.incrementingRelaxed = incrementingRelaxed;
     this.timeZone = timeZone;
     this.caseAdjustedTimestampColumns =
         timestampColumns != null ? new LruCache<>(16) : null;
@@ -212,7 +215,7 @@ public class TimestampIncrementingCriteria {
       assert previousOffset == null || previousOffset.getIncrementingOffset() == -1L
              || extractedId > previousOffset.getIncrementingOffset() || hasTimestampColumns();
     }
-    return new TimestampIncrementingOffset(extractedTimestamp, extractedId);
+    return new TimestampIncrementingOffset(extractedTimestamp, extractedId, null);
   }
 
   /**
@@ -236,6 +239,35 @@ public class TimestampIncrementingCriteria {
       }
     }
     return null;
+  }
+
+  /**
+   * Extract the maximum offset value from the row
+   *
+   * @param record the record's struct; never null
+   * @return updated offset
+   */
+  public TimestampIncrementingOffset extractMaximumSeenOffset(
+      Schema schema,
+      Struct record,
+      TimestampIncrementingOffset previousOffset
+  ) {
+    Long maximumId = null;
+    if (hasIncrementedColumn() && isIncrementingRelaxed()) {
+      maximumId = extractOffsetIncrementedId(schema, record);
+      assert previousOffset == null || previousOffset.getMaximumSeenOffset() == -1L
+          || maximumId >= previousOffset.getMaximumSeenOffset();
+    }
+    if (previousOffset == null) {
+      return new TimestampIncrementingOffset(null, null, maximumId);
+    } else {
+      return new TimestampIncrementingOffset(previousOffset.getTimestampOffset(),
+          previousOffset.getIncrementingOffset(), maximumId);
+    }
+  }
+
+  protected boolean isIncrementingRelaxed() {
+    return this.incrementingRelaxed;
   }
 
   /**

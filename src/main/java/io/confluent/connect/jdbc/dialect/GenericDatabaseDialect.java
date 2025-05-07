@@ -1006,9 +1006,11 @@ public class GenericDatabaseDialect implements DatabaseDialect {
   @Override
   public TimestampIncrementingCriteria criteriaFor(
       ColumnId incrementingColumn,
-      List<ColumnId> timestampColumns
+      List<ColumnId> timestampColumns,
+      boolean incrementingRelaxed
   ) {
-    return new TimestampIncrementingCriteria(incrementingColumn, timestampColumns, timeZone);
+    return new TimestampIncrementingCriteria(incrementingColumn, timestampColumns,
+        timeZone, incrementingRelaxed);
   }
 
   /**
@@ -1615,6 +1617,21 @@ public class GenericDatabaseDialect implements DatabaseDialect {
       Collection<ColumnId> nonKeyColumns
   ) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public String buildSelectMaxStatement(
+      TableId table,
+      ColumnId keyColumn
+  ) {
+    ExpressionBuilder builder = expressionBuilder();
+    builder.append("SELECT COALESCE(MAX(");
+    builder.appendColumnName(keyColumn.name());
+    builder.append("),-1) as ");
+    builder.appendColumnName(keyColumn.name());
+    builder.append(" FROM ");
+    builder.appendTableName(table.tableName());
+    return builder.toString();
   }
 
   @Override
