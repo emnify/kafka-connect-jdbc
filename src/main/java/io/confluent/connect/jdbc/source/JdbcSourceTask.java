@@ -188,6 +188,8 @@ public class JdbcSourceTask extends SourceTask {
 
     String incrementingColumn
         = config.getString(JdbcSourceTaskConfig.INCREMENTING_COLUMN_NAME_CONFIG);
+    Boolean incrementingRelaxed
+        = config.getBoolean(JdbcSourceTaskConfig.INCREMENTING_RELAXED_MONOTONIC_CONFIG);
     List<String> timestampColumns
         = config.getList(JdbcSourceTaskConfig.TIMESTAMP_COLUMN_NAME_CONFIG);
     Long timestampDelayInterval
@@ -267,6 +269,7 @@ public class JdbcSourceTask extends SourceTask {
                 topicPrefix,
                 null,
                 incrementingColumn,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
                 timeZone,
@@ -298,6 +301,7 @@ public class JdbcSourceTask extends SourceTask {
                 topicPrefix,
                 timestampColumns,
                 incrementingColumn,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
                 timeZone,

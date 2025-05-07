@@ -149,7 +149,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
 
     // Append the criteria using the columns ...
-    criteria = dialect.criteriaFor(incrementingColumn, timestampColumns);
+    criteria = dialect.criteriaFor(incrementingColumn, timestampColumns, incrementingRelaxed);
     criteria.whereClause(builder);
 
     addSuffixIfPresent(builder);

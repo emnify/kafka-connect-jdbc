@@ -40,13 +40,16 @@ public class TimestampIncrementingOffset {
    * @param incrementingOffset the incrementing offset.
    *                           If null, {@link #getIncrementingOffset()} will return -1.
    */
-  public TimestampIncrementingOffset(Timestamp timestampOffset, Long incrementingOffset, Long maximumSeenOffset) {
+  public TimestampIncrementingOffset(Timestamp timestampOffset, Long incrementingOffset,
+                                     Long maximumSeenOffset) {
     this.timestampOffset = timestampOffset;
     this.incrementingOffset = incrementingOffset;
     this.maximumSeenOffset = maximumSeenOffset;
   }
 
-  public long getMaximumSeenOffset() { return this.maximumSeenOffset; }
+  public long getMaximumSeenOffset() {
+    return this.maximumSeenOffset;
+  }
 
   public long getIncrementingOffset() {
     return incrementingOffset == null ? -1 : incrementingOffset;
