@@ -1645,6 +1645,21 @@ public class GenericDatabaseDialect implements DatabaseDialect {
   }
 
   @Override
+  public String buildSelectMaxStatement(
+      TableId table,
+      ColumnId keyColumn
+  ) {
+    ExpressionBuilder builder = expressionBuilder();
+    builder.append("SELECT COALESCE(MAX(");
+    builder.appendColumnName(keyColumn.name());
+    builder.append("),-1) as ");
+    builder.appendColumnName(keyColumn.name());
+    builder.append(" FROM ");
+    builder.appendTableName(table.tableName());
+    return builder.toString();
+  }
+
+  @Override
   public final String buildDeleteStatement(
       TableId table,
       Collection<ColumnId> keyColumns
