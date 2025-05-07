@@ -226,6 +226,8 @@ public class JdbcSourceTask extends SourceTask {
     ZoneId zoneId = config.zoneId();
     String suffix = config.getString(JdbcSourceTaskConfig.QUERY_SUFFIX_CONFIG).trim();
     Boolean queryMasked = config.isQueryMasked();
+    boolean incrementingRelaxed =
+        config.getBoolean(JdbcSourceConnectorConfig.INCREMENTING_RELAXED_MONOTONIC_CONFIG);
 
     if (queryMode.equals(TableQuerier.QueryMode.TABLE)) {
       validateColumnsExist(
@@ -306,6 +308,7 @@ public class JdbcSourceTask extends SourceTask {
                 topicPrefix,
                 null,
                 incrementingColumn,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
                 zoneId,
@@ -339,6 +342,7 @@ public class JdbcSourceTask extends SourceTask {
                 topicPrefix,
                 timestampColumns,
                 incrementingColumn,
+                incrementingRelaxed,
                 offset,
                 timestampDelayInterval,
                 zoneId,

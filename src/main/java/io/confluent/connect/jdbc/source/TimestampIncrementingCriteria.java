@@ -81,6 +81,7 @@ public class TimestampIncrementingCriteria {
   protected final ColumnId incrementingColumn;
   protected final ZoneId zoneId;
   protected final DateCalendarSystem dateCalendarSystem;
+  protected final boolean incrementingRelaxed;
   private final LruCache<Schema, List<String>> caseAdjustedTimestampColumns;
 
 
@@ -93,6 +94,7 @@ public class TimestampIncrementingCriteria {
         timestampColumns != null ? timestampColumns : Collections.<ColumnId>emptyList();
     this.incrementingColumn = incrementingColumn;
     this.zoneId = zoneId;
+    this.incrementingRelaxed = false;
     this.caseAdjustedTimestampColumns =
         timestampColumns != null ? new LruCache<>(16) : null;
     this.dateCalendarSystem = DateCalendarSystem.LEGACY;
@@ -102,12 +104,14 @@ public class TimestampIncrementingCriteria {
       ColumnId incrementingColumn,
       List<ColumnId> timestampColumns,
       ZoneId zoneId,
-      DateCalendarSystem dateCalendarSystem
+      DateCalendarSystem dateCalendarSystem,
+      boolean incrementingRelaxed
   ) {
     this.timestampColumns =
         timestampColumns != null ? timestampColumns : Collections.<ColumnId>emptyList();
     this.incrementingColumn = incrementingColumn;
     this.zoneId = zoneId;
+    this.incrementingRelaxed = incrementingRelaxed;
     this.caseAdjustedTimestampColumns =
         timestampColumns != null ? new LruCache<>(16) : null;
     this.dateCalendarSystem = dateCalendarSystem;
@@ -230,7 +234,7 @@ public class TimestampIncrementingCriteria {
       assert previousOffset == null || previousOffset.getIncrementingOffset() == -1L
              || extractedId > previousOffset.getIncrementingOffset() || hasTimestampColumns();
     }
-    return new TimestampIncrementingOffset(extractedTimestamp, extractedId);
+    return new TimestampIncrementingOffset(extractedTimestamp, extractedId, null);
   }
 
   /**
@@ -257,6 +261,31 @@ public class TimestampIncrementingCriteria {
       }
     }
     return null;
+  }
+
+  /**
+   * Extract the maximum offset value from the row
+   *
+   * @param record the record's struct; never null
+   * @return updated offset
+   */
+  public TimestampIncrementingOffset extractMaximumSeenOffset(
+      Schema schema,
+      Struct record,
+      TimestampIncrementingOffset previousOffset
+  ) {
+    Long maximumId = null;
+    if (hasIncrementedColumn() && isIncrementingRelaxed()) {
+      maximumId = extractOffsetIncrementedId(schema, record);
+      assert previousOffset == null || previousOffset.getMaximumSeenOffset() == -1L
+          || maximumId >= previousOffset.getMaximumSeenOffset();
+    }
+    if (previousOffset == null) {
+      return new TimestampIncrementingOffset(null, null, maximumId);
+    } else {
+      return new TimestampIncrementingOffset(previousOffset.getTimestampOffset(),
+          previousOffset.getIncrementingOffset(), maximumId);
+    }
   }
 
   /**
@@ -320,6 +349,10 @@ public class TimestampIncrementingCriteria {
       builder.append(")");
     }
     return builder.toString();
+  }
+
+  protected boolean isIncrementingRelaxed() {
+    return this.incrementingRelaxed;
   }
 
   protected void timestampIncrementingWhereClause(ExpressionBuilder builder) {

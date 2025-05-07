@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.time.ZoneId;
 
+import static org.easymock.EasyMock.anyBoolean;
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
@@ -114,7 +115,7 @@ public class TimestampTableQuerierTest {
   private void expectNewQuery() throws Exception {
     expect(dialect.createPreparedStatement(eq(db), anyObject())).andReturn(stmt);
     expect(dialect.expressionBuilder()).andReturn(expressionBuilder);
-    expect(dialect.criteriaFor(anyObject(), anyObject())).andReturn(criteria);
+    expect(dialect.criteriaFor(anyObject(), anyObject(), anyBoolean())).andReturn(criteria);
     dialect.validateSpecificColumnTypes(anyObject(), anyObject());
     expectLastCall();
     criteria.whereClause(expressionBuilder);

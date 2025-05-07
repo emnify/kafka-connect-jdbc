@@ -182,6 +182,20 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
       + "specific dialect. All properly-packaged dialects in the JDBC connector plugin "
       + "can be used.";
 
+
+  public static final String INCREMENTING_RELAXED_MONOTONIC_CONFIG =
+      "incrementing.relaxed.monotonic";
+  private static final String INCREMENTING_RELAXED_MONOTONIC_DOC =
+      "Slightly relaxes monotonic requirement. Column specified or auto-detected "
+          + "as incrementing column allows values inserted in the last `poll.interval.ms` "
+          + "to be visible out-of-order. Values inserted before `poll.interval.ms` are "
+          + "required to be strictly monotonically increasing. This flag will introduce "
+          + "`poll.interval.ms` delay, but will allow transactions in the source database to be "
+          + "visible within this interval (usable e.g. when reading from read-only replicas).";
+  public static final boolean INCREMENTING_RELAXED_MONOTONIC_DEFAULT = false;
+  private static final String INCREMENTING_RELAXED_MONOTONIC_DISPLAY =
+      "Enabled relaxed monotonic requirement";
+
   public static final String MODE_CONFIG = "mode";
   private static final String MODE_DOC =
       "The mode for updating a table each time it is polled. Options include:\n"
@@ -1036,6 +1050,15 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
         ++orderInGroup,
         Width.MEDIUM,
         QUERY_RETRIES_DISPLAY
+    ).define(INCREMENTING_RELAXED_MONOTONIC_CONFIG,
+        Type.BOOLEAN,
+        INCREMENTING_COLUMN_NAME_DEFAULT,
+        Importance.LOW,
+        INCREMENTING_COLUMN_NAME_DOC,
+        MODE_GROUP,
+        ++orderInGroup,
+        Width.MEDIUM,
+        INCREMENTING_COLUMN_NAME_DISPLAY
     );
   }
 

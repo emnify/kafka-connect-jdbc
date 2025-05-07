@@ -1024,10 +1024,11 @@ public class GenericDatabaseDialect implements DatabaseDialect {
   @Override
   public TimestampIncrementingCriteria criteriaFor(
       ColumnId incrementingColumn,
-      List<ColumnId> timestampColumns
+      List<ColumnId> timestampColumns,
+      boolean incrementingRelaxed
   ) {
     return new TimestampIncrementingCriteria(incrementingColumn, timestampColumns, zoneId,
-        ((JdbcSourceConnectorConfig) config).getDateCalendarSystem());
+        ((JdbcSourceConnectorConfig) config).getDateCalendarSystem(), incrementingRelaxed);
   }
 
   /**

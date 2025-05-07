@@ -23,11 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.time.ZoneId;
@@ -70,6 +66,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
   protected TimestampIncrementingOffset committedOffset;
   protected TimestampIncrementingOffset offset;
   protected TimestampIncrementingCriteria criteria;
+  protected boolean incrementingRelaxed;
   protected final Map<String, String> partition;
   protected final String topic;
   protected final TimestampGranularity timestampGranularity;
@@ -86,6 +83,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
       String topicPrefix,
       List<String> timestampColumnNames,
       String incrementingColumnName,
+      boolean incrementingRelaxed,
       Map<String, Object> offsetMap,
       Long timestampDelay,
       ZoneId zoneId,
@@ -96,6 +94,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     this.incrementingColumnName = incrementingColumnName;
     this.timestampColumnNames = timestampColumnNames != null
         ? timestampColumnNames : Collections.emptyList();
+    this.incrementingRelaxed = incrementingRelaxed;
     this.timestampDelay = timestampDelay;
     this.committedOffset = this.offset = TimestampIncrementingOffset.fromMap(offsetMap);
     this.shoudlRedactSensitiveLogs = isQueryMasked;
@@ -158,7 +157,7 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
     }
 
     // Append the criteria using the columns ...
-    criteria = dialect.criteriaFor(incrementingColumn, timestampColumns);
+    criteria = dialect.criteriaFor(incrementingColumn, timestampColumns, incrementingRelaxed);
     criteria.whereClause(builder);
 
     addSuffixIfPresent(builder);
@@ -252,16 +251,6 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
   }
 
   @Override
-  public void reset(long now, boolean resetOffset) {
-    // the task is being reset, any uncommitted offset needs to be reset as well
-    // use the previous committedOffset to set the running offset
-    if (resetOffset) {
-      this.offset = this.committedOffset;
-    }
-    super.reset(now, resetOffset);
-  }
-
-  @Override
   public Timestamp beginTimestampValue() {
     return offset.getTimestampOffset();
   }
@@ -278,6 +267,86 @@ public class TimestampIncrementingTableQuerier extends TableQuerier implements C
   @Override
   public Long lastIncrementedValue() {
     return offset.getIncrementingOffset();
+  }
+
+  protected TimestampIncrementingOffset extractMaximumOffset(ResultSet rs) throws SQLException {
+    try {
+      // TODO: add test case
+      if (rs.next()) {
+        String schemaName = tableId != null ? tableId.tableName() : null; // backwards compatible
+        SchemaMapping mapping = SchemaMapping.create(schemaName, resultSet.getMetaData(), dialect);
+        assert !mapping.fieldSetters().isEmpty();
+        FieldSetter se = mapping.fieldSetters().get(0);
+        assert se.field().schema().name() == incrementingColumnName;
+        Struct st = new Struct(mapping.schema());
+        se.setField(st, rs);
+        return criteria.extractMaximumSeenOffset(this.schemaMapping.schema(), st, this.offset);
+      } else {
+        log.info("No maximum found. Skipping table.");
+        return this.offset;
+      }
+    } catch (IOException e) {
+      log.warn("Error extracting maximum", e);
+      throw new ConnectException(e);
+    } catch (SQLException e) {
+      log.warn("SQL error mapping incrementing column into maximum offset", e);
+      throw new DataException(e);
+    }
+  }
+
+  private ResultSet executeMaxQuery(PreparedStatement st) throws SQLException {
+    log.trace("Statement to execute: {}", st.toString());
+    return st.executeQuery();
+  }
+
+  protected PreparedStatement createSelectMaximumPreparedStatement(Connection db)
+      throws SQLException {
+    ColumnId incrementingColumn = null;
+    if (incrementingColumnName != null && !incrementingColumnName.isEmpty()) {
+      incrementingColumn = new ColumnId(tableId, incrementingColumnName);
+      String queryString = dialect.buildSelectMaxStatement(tableId, incrementingColumn);
+      recordQuery(queryString);
+      log.debug("{} prepared SQL query: {}", this, queryString);
+      return dialect.createPreparedStatement(db, queryString);
+    } else {
+      throw new ConnectException("Unable to find incrementing column");
+    }
+  }
+
+  private void updateMaximumSeenOffset() throws ConnectException {
+    if (this.db != null) {
+      try (
+          PreparedStatement st = createSelectMaximumPreparedStatement(db);
+          ResultSet rs = executeMaxQuery(st)
+      ) {
+        this.offset = extractMaximumOffset(rs);
+      } catch (Throwable th) {
+        throw new ConnectException("Unable to fetch new maximum", th);
+      }
+    } else {
+      log.warn("Unable to update maximum seen offset. Database connection closed.");
+    }
+  }
+
+
+
+  @Override
+  public void reset(long now, boolean resetOffset) {
+    if (this.incrementingRelaxed
+        && this.incrementingColumnName != null
+        && this.incrementingColumnName.length() > 0
+        && this.db != null
+    ) {
+      updateMaximumSeenOffset();
+    } else {
+      if (this.incrementingRelaxed) {
+        log.warn("Skipping maximum update, but incrementing.relaxed.monotonic is enabled.");
+      }
+    }
+    if (resetOffset) {
+      this.offset = this.committedOffset;
+    }
+    super.reset(now, resetOffset);
   }
 
   @Override
