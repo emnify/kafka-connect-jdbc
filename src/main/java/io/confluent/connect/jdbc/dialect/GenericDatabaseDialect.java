@@ -1009,7 +1009,8 @@ public class GenericDatabaseDialect implements DatabaseDialect {
       List<ColumnId> timestampColumns,
       boolean incrementingRelaxed
   ) {
-    return new TimestampIncrementingCriteria(incrementingColumn, timestampColumns, timeZone, incrementingRelaxed);
+    return new TimestampIncrementingCriteria(incrementingColumn, timestampColumns,
+        timeZone, incrementingRelaxed);
   }
 
   /**
