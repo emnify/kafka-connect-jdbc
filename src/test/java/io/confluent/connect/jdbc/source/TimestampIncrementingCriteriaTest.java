@@ -487,11 +487,15 @@ public class TimestampIncrementingCriteriaTest {
     criteriaTs.timestampWhereClause(builder);
     assertEquals(
         " WHERE "
-        + "COALESCE(\"myTable\".\"ts1\",\"myTable\".\"ts2\") > ? "
+        + "(\"myTable\".\"ts1\" > ? "
         + "AND "
-        + "COALESCE(\"myTable\".\"ts1\",\"myTable\".\"ts2\") < ? "
+        + "\"myTable\".\"ts1\" < ? ) "
+        + " OR "
+        + "(\"myTable\".\"ts1\" > ? "
+        + "AND "
+        + "\"myTable\".\"ts1\" < ? ) "
         + "ORDER BY "
-        + "COALESCE(\"myTable\".\"ts1\",\"myTable\".\"ts2\") "
+        + "\"myTable\".\"ts1\", \"myTable\".\"ts2\" "
         + "ASC",
         builder.toString()
     );
@@ -501,11 +505,15 @@ public class TimestampIncrementingCriteriaTest {
     criteriaTs.timestampWhereClause(builder);
     assertEquals(
         " WHERE "
-        + "COALESCE(myTable.ts1,myTable.ts2) > ? "
+        + "myTable.ts1 > ? "
         + "AND "
-        + "COALESCE(myTable.ts1,myTable.ts2) < ? "
+        + "myTable.ts1 < ? "
+        + " OR "
+        + "myTable.ts2 > ? "
+        + "AND "
+        + "myTable.ts2 < ? "
         + "ORDER BY "
-        + "COALESCE(myTable.ts1,myTable.ts2) "
+        + "myTable.ts1, myTable.ts2"
         + "ASC",
         builder.toString()
     );
