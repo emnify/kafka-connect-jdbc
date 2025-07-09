@@ -493,7 +493,7 @@ public class TimestampIncrementingCriteriaTest {
         + "GREATEST(COALESCE(\"myTable\".\"ts1\",0),"
         +  "COALESCE(\"myTable\".\"ts2\",0)) < ? "
         + "ORDER BY "
-        + "COALESCE(\"myTable\".\"ts1\",\"myTable\".\"ts2\") "
+        + "\"myTable\".\"ts1\",\"myTable\".\"ts2\" "
         + "ASC",
         builder.toString()
     );
@@ -509,7 +509,7 @@ public class TimestampIncrementingCriteriaTest {
         + "GREATEST(COALESCE(myTable.ts1,0),"
         + "COALESCE(myTable.ts2,0)) < ? "
         + "ORDER BY "
-        + "COALESCE(myTable.ts1,myTable.ts2) "
+        + "myTable.ts1,myTable.ts2 "
         + "ASC",
         builder.toString()
     );

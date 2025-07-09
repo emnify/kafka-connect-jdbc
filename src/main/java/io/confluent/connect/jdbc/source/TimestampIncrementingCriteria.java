@@ -419,7 +419,7 @@ public class TimestampIncrementingCriteria {
     builder.append(" > ? AND ");
     coalesceMaxTimestampColumns(builder);
     builder.append(" < ? ORDER BY ");
-    coalesceTimestampColumns(builder);
+    builder.appendList().delimitedBy(",").of(timestampColumns);
     builder.append(" ASC");
   }
 
