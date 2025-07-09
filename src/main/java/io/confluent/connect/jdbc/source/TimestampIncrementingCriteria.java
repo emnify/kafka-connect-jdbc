@@ -194,10 +194,8 @@ public class TimestampIncrementingCriteria {
   ) throws SQLException {
     Timestamp beginTime = values.beginTimestampValue();
     Timestamp endTime = values.endTimestampValue();
-    for (int i = 0; i < timestampColumns.size(); i++) {
-      stmt.setTimestamp(2 * i + 1, beginTime, DateTimeUtils.getZoneIdCalendar(zoneId));
-      stmt.setTimestamp(2 * i + 2, endTime, DateTimeUtils.getZoneIdCalendar(zoneId));
-    }
+    stmt.setTimestamp(1, beginTime, DateTimeUtils.getZoneIdCalendar(zoneId));
+    stmt.setTimestamp(2, endTime, DateTimeUtils.getZoneIdCalendar(zoneId));
     log.debug("Executing prepared statement with timestamp value = {} end time = {}",
         DateTimeUtils.formatTimestamp(beginTime, zoneId),
         DateTimeUtils.formatTimestamp(endTime, zoneId)
@@ -361,6 +359,20 @@ public class TimestampIncrementingCriteria {
     return this.incrementingRelaxed;
   }
 
+  protected String coalesceMaxTimestampColumns(ExpressionBuilder builder) {
+    if (timestampColumns.size() == 1) {
+      builder.append(timestampColumns.get(0));
+    } else {
+      builder.append("GREATEST(");
+      builder.appendList().transformedBy(
+          (b, col) ->
+              b.append("COALESCE(").append(col).append(",0)"))
+          .delimitedBy(",").of(timestampColumns);
+      builder.append(")");
+    }
+    return builder.toString();
+  }
+
   protected void timestampIncrementingWhereClause(ExpressionBuilder builder) {
     // This version combines two possible conditions. The first checks timestamp == last
     // timestamp and incrementing > last incrementing. The timestamp alone would include
@@ -401,31 +413,13 @@ public class TimestampIncrementingCriteria {
     builder.append(" ASC");
   }
 
-  protected void timeWindow(ExpressionBuilder builder, ColumnId column) {
-    builder.append("(");
-    builder.append(column);
-    builder.append(" > ? AND ");
-    builder.append(column);
-    builder.append(" < ? ) ");
-  }
-
   protected void timestampWhereClause(ExpressionBuilder builder) {
     builder.append(" WHERE ");
-    for (int i=0;i<timestampColumns.size();i++) {
-      if (i>0) {
-        builder.append(" OR ");
-      }
-      timeWindow(builder, timestampColumns.get(i));
-    }
-
-    builder.append(" ORDER BY ");
-    for (int i=0;i<timestampColumns.size();i++) {
-      if (i>0) {
-        builder.append(", ");
-      }
-      builder.append(timestampColumns.get(i));
-    }
-
+    coalesceMaxTimestampColumns(builder);
+    builder.append(" > ? AND ");
+    coalesceMaxTimestampColumns(builder);
+    builder.append(" < ? ORDER BY ");
+    coalesceTimestampColumns(builder);
     builder.append(" ASC");
   }
 
