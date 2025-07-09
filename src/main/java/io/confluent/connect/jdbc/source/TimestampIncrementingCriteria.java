@@ -165,8 +165,10 @@ public class TimestampIncrementingCriteria {
   ) throws SQLException {
     Timestamp beginTime = values.beginTimetampValue();
     Timestamp endTime = values.endTimetampValue();
-    stmt.setTimestamp(1, beginTime, DateTimeUtils.getTimeZoneCalendar(timeZone));
-    stmt.setTimestamp(2, endTime, DateTimeUtils.getTimeZoneCalendar(timeZone));
+    for (int i=0;i<timestampColumns.size();i++) {
+      stmt.setTimestamp(1, beginTime, DateTimeUtils.getTimeZoneCalendar(timeZone));
+      stmt.setTimestamp(2, endTime, DateTimeUtils.getTimeZoneCalendar(timeZone));
+    }
     log.debug("Executing prepared statement with timestamp value = {} end time = {}",
         DateTimeUtils.formatTimestamp(beginTime, timeZone),
         DateTimeUtils.formatTimestamp(endTime, timeZone)
@@ -328,13 +330,31 @@ public class TimestampIncrementingCriteria {
     builder.append(" ASC");
   }
 
+  protected void timeWindow(ExpressionBuilder builder, ColumnId column) {
+    builder.append("(");
+    builder.append(column);
+    builder.append(" > ? AND ");
+    builder.append(column);
+    builder.append(" < ? ) ");
+  }
+
   protected void timestampWhereClause(ExpressionBuilder builder) {
     builder.append(" WHERE ");
-    coalesceTimestampColumns(builder);
-    builder.append(" > ? AND ");
-    coalesceTimestampColumns(builder);
-    builder.append(" < ? ORDER BY ");
-    coalesceTimestampColumns(builder);
+    for (int i=0;i<timestampColumns.size();i++) {
+      if (i>0) {
+        builder.append(" OR ");
+      }
+      timeWindow(builder, timestampColumns.get(i));
+    }
+
+    builder.append(" ORDER BY ");
+    for (int i=0;i<timestampColumns.size();i++) {
+      if (i>0) {
+        builder.append(", ");
+      }
+      builder.append(timestampColumns.get(i));
+    }
+
     builder.append(" ASC");
   }
 
