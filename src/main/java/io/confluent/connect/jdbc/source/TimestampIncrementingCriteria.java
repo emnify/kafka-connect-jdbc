@@ -340,6 +340,20 @@ public class TimestampIncrementingCriteria {
     return builder.toString();
   }
 
+  protected String coalesceMaxTimestampColumns(ExpressionBuilder builder) {
+    if (timestampColumns.size() == 1) {
+      builder.append(timestampColumns.get(0));
+    } else {
+      builder.append("GREATEST(");
+      builder.appendList().transformedBy(
+          (b, col) ->
+              b.append("COALESCE(").append(col).append(",0)"))
+          .delimitedBy(",").of(timestampColumns);
+      builder.append(")");
+    }
+    return builder.toString();
+  }
+
   protected void timestampIncrementingWhereClause(ExpressionBuilder builder) {
     // This version combines two possible conditions. The first checks timestamp == last
     // timestamp and incrementing > last incrementing. The timestamp alone would include
@@ -392,11 +406,11 @@ public class TimestampIncrementingCriteria {
 
   protected void timestampWhereClause(ExpressionBuilder builder) {
     builder.append(" WHERE ");
-    coalesceTimestampColumns(builder);
+    coalesceMaxTimestampColumns(builder);
     builder.append(" > ? AND ");
-    coalesceTimestampColumns(builder);
+    coalesceMaxTimestampColumns(builder);
     builder.append(" < ? ORDER BY ");
-    coalesceTimestampColumns(builder);
+    builder.appendList().delimitedBy(",").of(timestampColumns);
     builder.append(" ASC");
   }
 
