@@ -6,6 +6,7 @@ package io.confluent.connect.jdbc.source;
 
 import io.confluent.connect.jdbc.dialect.DatabaseDialect;
 import io.confluent.connect.jdbc.util.CachedConnectionProvider;
+import io.confluent.connect.jdbc.util.CronScheduler;
 import io.confluent.connect.jdbc.util.LogUtil;
 import io.confluent.connect.jdbc.util.RecordDestination;
 import org.apache.kafka.common.utils.Time;
@@ -30,6 +31,7 @@ public class TableQuerierProcessor {
   private CachedConnectionProvider cachedConnectionProvider;
   private final int maxRetriesPerQuerier;
   private final Duration timeout = Duration.ofSeconds(90);
+  private final CronScheduler cronScheduler;
 
   public TableQuerierProcessor(
       JdbcSourceTaskConfig config,
@@ -44,6 +46,9 @@ public class TableQuerierProcessor {
     this.cachedConnectionProvider = cachedConnectionProvider;
     this.maxRetriesPerQuerier = config.getInt(JdbcSourceConnectorConfig.QUERY_RETRIES_CONFIG);
     this.shouldRedactSensitiveLogs = config.isQueryMasked();
+    String cronExpr = config.getString(JdbcSourceConnectorConfig.POLL_CRON_CONFIG);
+    this.cronScheduler = (cronExpr != null && !cronExpr.isEmpty())
+        ? new CronScheduler(cronExpr) : null;
   }
 
   public long process(RecordDestination<SourceRecord> destination) {
@@ -56,8 +61,7 @@ public class TableQuerierProcessor {
 
       if (!querier.querying()) {
         // If not in the middle of an update, wait for next update time
-        final long nextUpdate = querier.getLastUpdate()
-            + config.getInt(JdbcSourceTaskConfig.POLL_INTERVAL_MS_CONFIG);
+        final long nextUpdate = computeNextUpdate(querier.getLastUpdate());
         final long now = time.milliseconds();
         final long sleepMs = Math.min(nextUpdate - now, 100);
 
@@ -92,6 +96,13 @@ public class TableQuerierProcessor {
     }
     log.info("Task has been stopped, exiting the processor");
     return 0;
+  }
+
+  private long computeNextUpdate(long lastUpdate) {
+    if (cronScheduler != null) {
+      return cronScheduler.nextTimeAfterMs(lastUpdate);
+    }
+    return lastUpdate + config.getInt(JdbcSourceTaskConfig.POLL_INTERVAL_MS_CONFIG);
   }
 
   private boolean isReadyToProcess() {

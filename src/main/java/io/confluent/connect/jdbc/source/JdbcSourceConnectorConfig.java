@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.microsoft.sqlserver.jdbc.SQLServerConnection;
+import io.confluent.connect.jdbc.util.CronScheduler;
 import io.confluent.connect.jdbc.util.DatabaseDialectRecommender;
 import io.confluent.connect.jdbc.util.DateTimeUtils;
 import io.confluent.connect.jdbc.util.DefaultJdbcCredentialsProvider;
@@ -113,6 +114,15 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
                                                      + "each table.";
   public static final int POLL_INTERVAL_MS_DEFAULT = 5000;
   private static final String POLL_INTERVAL_MS_DISPLAY = "Poll Interval (ms)";
+
+  public static final String POLL_CRON_CONFIG = "poll.cron";
+  private static final String POLL_CRON_DOC =
+      "Cron expression (Unix 5-field format: minute hour day-of-month month day-of-week) "
+      + "defining when to poll each table. When set, overrides poll.interval.ms. "
+      + "Times are interpreted in UTC. Example: '0 * * * *' polls at the top of every hour, "
+      + "'*/15 * * * *' polls every 15 minutes.";
+  public static final String POLL_CRON_DEFAULT = "";
+  private static final String POLL_CRON_DISPLAY = "Poll Cron Schedule";
 
   public static final String BATCH_MAX_ROWS_CONFIG = "batch.max.rows";
   private static final String BATCH_MAX_ROWS_DOC =
@@ -1085,6 +1095,17 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
         Width.SHORT,
         POLL_INTERVAL_MS_DISPLAY
     ).define(
+        POLL_CRON_CONFIG,
+        Type.STRING,
+        POLL_CRON_DEFAULT,
+        new CronExpressionValidator(),
+        Importance.MEDIUM,
+        POLL_CRON_DOC,
+        CONNECTOR_GROUP,
+        ++orderInGroup,
+        Width.LONG,
+        POLL_CRON_DISPLAY
+    ).define(
         BATCH_MAX_ROWS_CONFIG,
         Type.INT,
         BATCH_MAX_ROWS_DEFAULT,
@@ -1618,6 +1639,28 @@ public class JdbcSourceConnectorConfig extends AbstractConfig {
    */
   public List<String> getIncrementingColumnMapping() {
     return incrementingColumnMapping();
+  }
+
+  static class CronExpressionValidator implements Validator {
+    @Override
+    public void ensureValid(String name, Object value) {
+      String expr = (String) value;
+      if (expr == null || expr.isEmpty()) {
+        return; // empty = disabled, always valid
+      }
+      try {
+        CronScheduler.validate(expr);
+      } catch (IllegalArgumentException e) {
+        throw new ConfigException(name, value,
+            "Invalid cron expression: " + e.getMessage());
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "Unix cron expression (minute hour day-of-month month day-of-week), "
+          + "or empty to use poll.interval.ms";
+    }
   }
 
   public static void main(String[] args) {

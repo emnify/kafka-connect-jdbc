@@ -355,10 +355,6 @@ public class TimestampIncrementingCriteria {
     return builder.toString();
   }
 
-  protected boolean isIncrementingRelaxed() {
-    return this.incrementingRelaxed;
-  }
-
   protected String coalesceMaxTimestampColumns(ExpressionBuilder builder) {
     if (timestampColumns.size() == 1) {
       builder.append(timestampColumns.get(0));
